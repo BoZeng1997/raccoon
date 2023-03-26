@@ -6,12 +6,15 @@
 
 #include "Material.h"
 #include "BaseNameInterface.h"
+#include "DerivativeMaterialPropertyNameInterface.h"
 
 /**
  * The class implements the external driving force to recover a Drucker-Prager
  * strength envelope. See Kumar et. al. https://doi.org/10.1016/j.jmps.2020.104027.
  */
-class MaterialNucleationMicroForce2021 : public Material, public BaseNameInterface
+class MaterialNucleationMicroForce2021 : public Material,
+                                         public BaseNameInterface,
+                                         public DerivativeMaterialPropertyNameInterface
 {
 public:
   static InputParameters validParams();
@@ -60,4 +63,12 @@ protected:
   const MaterialPropertyName _stress_balance_name;
   /// stress space balance
   ADMaterialProperty<Real> & _stress_balance;
+
+  /// Name of the phase-field variable
+  const VariableName _d_name;
+  // @{ The degradation function and its derivative w/r/t damage
+  const MaterialPropertyName _g_name;
+  const ADMaterialProperty<Real> & _g;
+  const ADMaterialProperty<Real> & _dg_dd;
+  // @}
 };

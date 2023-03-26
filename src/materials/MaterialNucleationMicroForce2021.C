@@ -35,7 +35,7 @@ MaterialNucleationMicroForce2021::validParams()
       "compressive_strength",
       "The compressive strength of the material beyond which the material fails.");
 
-  //   params.addRequiredParam<Real>("delta", "delta");
+  // params.addRequiredParam<Real>("delta", "delta");
   params.addRequiredParam<MaterialPropertyName>("delta", "delta");
   params.addParam<MaterialPropertyName>(
       "external_driving_force_name",
@@ -44,6 +44,10 @@ MaterialNucleationMicroForce2021::validParams()
   params.addParam<MaterialPropertyName>(
       "stress_balance_name", "stress_balance", "Name of the stress balance");
   params.addParam<MaterialPropertyName>("stress_name", "stress", "Name of the stress tensor");
+  params.addRequiredCoupledVar("phase_field", "Name of the phase-field (damage) variable");
+
+  params.addParam<MaterialPropertyName>("degradation_function", "g", "The degradation function");
+
   return params;
 }
 
@@ -64,7 +68,12 @@ MaterialNucleationMicroForce2021::MaterialNucleationMicroForce2021(
     // _delta(getParam<Real>("delta")),
     _delta(getADMaterialProperty<Real>(prependBaseName("delta", true))),
     _stress(getADMaterialProperty<RankTwoTensor>(prependBaseName("stress_name", true))),
-    _stress_balance(declareADProperty<Real>(prependBaseName("stress_balance_name", true)))
+    _stress_balance(declareADProperty<Real>(prependBaseName("stress_balance_name", true))),
+    _d_name(getVar("phase_field", 0)->name()),
+    // The degradation function and its derivatives
+    _g_name(prependBaseName("degradation_function", true)),
+    _g(getADMaterialProperty<Real>(_g_name)),
+    _dg_dd(getADMaterialProperty<Real>(derivativePropertyName(_g_name, {_d_name})))
 {
 }
 
@@ -78,10 +87,16 @@ MaterialNucleationMicroForce2021::computeQpProperties()
   ADReal gamma_0 = _sigma_ts[_qp] / 6.0 / (3.0 * _lambda[_qp] + 2.0 * _mu[_qp]) +
                    _sigma_ts[_qp] / 6.0 / _mu[_qp];
   ADReal gamma_1 = (1.0 + _delta[_qp]) / (2.0 * _sigma_ts[_qp] * _sigma_cs[_qp]);
-  // ADReal gamma_2 = (8 * _mu[_qp] + 24 * K - 27 * _sigma_ts[_qp]) / 144 / _mu[_qp] / K;
+  // ADReal gamma_2 = (8 * _mu[_qp] + 24 * K - 27 * _sigma_ts) / 144 / _mu[_qp] / K;
 
   // The mobility
   ADReal M = _Gc[_qp] / _L[_qp] / _c0[_qp];
+
+  // Compute the external driving force required to recover the desired strength envelope.
+  ADReal beta_0 = _delta[_qp] * M;
+  ADReal beta_1 = -gamma_1 * M * (_sigma_cs[_qp] - _sigma_ts[_qp]) + gamma_0;
+  ADReal beta_2 = std::sqrt(3.0) * (-gamma_1 * M * (_sigma_cs[_qp] + _sigma_ts[_qp]) + gamma_0);
+  ADReal beta_3 = _L[_qp] * _sigma_ts[_qp] / _mu[_qp] / K / _Gc[_qp];
 
   // Invariants of the stress
   ADReal I1 = _stress[_qp].trace();
@@ -103,14 +118,9 @@ MaterialNucleationMicroForce2021::computeQpProperties()
   if (MooseUtils::absoluteFuzzyEqual(J2, 0))
     J2.value() = libMesh::TOLERANCE * libMesh::TOLERANCE;
 
-  // Compute the external driving force required to recover the desired strength envelope.
-  ADReal beta_0 = _delta[_qp] * M;
-  ADReal beta_1 = -gamma_1 * M * (_sigma_cs[_qp] - _sigma_ts[_qp]) - gamma_0;
-  ADReal beta_2 = std::sqrt(3.0) * (-gamma_1 * M * (_sigma_cs[_qp] + _sigma_ts[_qp]) + gamma_0);
-  ADReal beta_3 = _L[_qp] * _sigma_ts[_qp] / _mu[_qp] / K / _Gc[_qp];
   _ex_driving[_qp] =
       (beta_2 * std::sqrt(J2) + beta_1 * I1 + beta_0) +
-      (1.0 - std::sqrt(I1 * I1) / I1) *
+      (1.0 - std::sqrt(I1 * I1) / I1) / pow(_g[_qp], 1.5) *
           (J2 / 2.0 / _mu[_qp] + I1 * I1 / 6.0 / (3.0 * _lambda[_qp] + 2.0 * _mu[_qp]));
   _stress_balance[_qp] = J2 / _mu[_qp] + pow(I1, 2) / 9.0 / K - _ex_driving[_qp] - M;
 }
