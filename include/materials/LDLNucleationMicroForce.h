@@ -55,6 +55,9 @@ protected:
   /// The materiel and model dependent parameter
   ADMaterialProperty<Real> & _delta;
 
+  /// mesh size
+  const Real & _h;
+
   /// The stress tensor
   const ADMaterialProperty<RankTwoTensor> & _stress;
 

@@ -41,7 +41,8 @@ refine = 3
   [fracture]
     type = TransientMultiApp
     input_files = fracture_ldl.i
-    cli_args = 'E=${E};K=${K};G=${G};Lambda=${Lambda};Gc=${Gc};l=${l};nx=${nx};ny=${ny};refine=${refine};sigma_ts=${sigma_ts};sigma_hs=${sigma_hs};'
+    cli_args = 'E=${E};K=${K};G=${G};Lambda=${Lambda};Gc=${Gc};l=${l};nx=${nx};ny=${ny};'
+                'refine=${refine};sigma_ts=${sigma_ts};sigma_hs=${sigma_hs};filebase=${filebase}'
     execute_on = 'TIMESTEP_END'
   []
 []
@@ -93,7 +94,7 @@ refine = 3
     [marker]
       type = BoxMarker
       bottom_left = '0 -0.7 0'
-      top_right = '30 0.7 0'
+      top_right = '10 0.7 0'
       outside = DO_NOTHING
       inside = REFINE
     []
@@ -160,8 +161,8 @@ refine = 3
 [Materials]
   [bulk]
     type = ADGenericConstantMaterial
-    prop_names = 'E K G lambda Gc l'
-    prop_values = '${E} ${K} ${G} ${Lambda} ${Gc} ${l}'
+    prop_names = 'E K G lambda'
+    prop_values = '${E} ${K} ${G} ${Lambda}'
   []
   [degradation]
     type = PowerDegradationFunction
@@ -206,6 +207,9 @@ refine = 3
     value = 'Jint'
     scaling_factor = '${fparse 1.0/Gc}'
   []
+  [fp_itr]
+    type = NumFixedPointIterations
+  []
 []
 
 [Executioner]
@@ -215,6 +219,7 @@ refine = 3
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
   petsc_options_value = 'lu       superlu_dist                 '
   automatic_scaling = true
+  compute_scaling_once = true
 
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-10
@@ -225,11 +230,17 @@ refine = 3
 
   fixed_point_max_its = 500
   accept_on_max_fixed_point_iteration = false
-  fixed_point_rel_tol = 1e-6
-  fixed_point_abs_tol = 1e-8
+  fixed_point_rel_tol = 1e-4
+  fixed_point_abs_tol = 1e-7
 []
 
 [Outputs]
-  exodus = true
+  [exodus]
+    type = Exodus
+  []
+  [csv]
+    type = CSV
+  []
   print_linear_residuals = false
+  file_base = '${filebase}'
 []

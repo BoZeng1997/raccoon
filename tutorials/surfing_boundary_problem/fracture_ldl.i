@@ -20,7 +20,7 @@
     [marker]
       type = BoxMarker
       bottom_left = '0 -0.7 0'
-      top_right = '30 0.7 0'
+      top_right = '10 0.7 0'
       outside = DO_NOTHING
       inside = REFINE
     []
@@ -52,18 +52,12 @@
 []
 
 [Bounds]
-  # [conditional]
-  #   type = ConditionalBoundsAux
-  #   variable = bounds_dummy
-  #   bounded_variable = d
-  #   fixed_bound_value = 0
-  #   threshold_value = 0.95
-  # []
-  [irreversibility]
-    type = VariableOldValueBounds
+  [conditional]
+    type = ConditionalBoundsAux
     variable = bounds_dummy
     bounded_variable = d
-    bound_type = lower
+    fixed_bound_value = 0.0
+    threshold_value = 0.0
   []
   [upper]
     type = ConstantBounds
@@ -90,7 +84,9 @@
   [nuc_force]
     type = ADCoefMatSource
     variable = d
-    prop_names = 'ce_deg'
+    # prop_names = 'ce_deg'
+    prop_names = 'ce'
+    # coefficient = -1.0
   []
   # [dummy]
   #   type = NullKernel
@@ -117,13 +113,15 @@
     f_name = alpha
     function = 'd'
     phase_field = d
+    output_properties = c0
+    outputs = exodus
   []
   [psi]
     type = ADDerivativeParsedMaterial
     f_name = psi
-    function = 'g*psie_active + (Gc*delta/c0/l)*alpha + (1-d)^3/3*ce'
+    function = 'g*psie_active + (Gc*delta/c0/l)*alpha ' #+ (1-d)^3/3*ce
     args = 'd psie_active'
-    material_property_names = 'ce alpha(d) g(d) delta Gc c0 l'
+    material_property_names = 'delta alpha(d) g(d) Gc c0 l'
     derivative_order = 1
   []
   [Gc_delta]
@@ -157,16 +155,17 @@
     stress_balance_name = stress_balance
     output_properties = 'ce delta stress_balance'
     outputs = exodus
+    h = 0.0
   []
-  [ce_deg]
-    type = ADParsedMaterial
-    property_name = ce_deg
-    expression = 'ce*(1-d)^3/3'
-    material_property_names = 'ce'
-    coupled_variables = 'd'
-    output_properties = 'ce_deg'
-    outputs = exodus
-  []
+  # [ce_deg]
+  #   type = ADParsedMaterial
+  #   property_name = ce_deg
+  #   expression = 'ce*(1-d)^2'
+  #   material_property_names = 'ce'
+  #   coupled_variables = 'd'
+  #   output_properties = 'ce_deg'
+  #   outputs = exodus
+  # []
   [strain]
     type = ADComputePlaneSmallStrain
     out_of_plane_strain = 'strain_zz'
@@ -194,12 +193,18 @@
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -snes_type'
   petsc_options_value = 'lu       superlu_dist                  vinewtonrsls'
   automatic_scaling = true
+  line_search = bt
+  compute_scaling_once = true
+  nl_max_its = 100
 
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-10
 []
 
 [Outputs]
-  exodus = true
+  [exodus]
+    type = Exodus
+  []
   print_linear_residuals = false
+  file_base = '${filebase}_frac'
 []
