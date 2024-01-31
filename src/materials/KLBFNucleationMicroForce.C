@@ -13,9 +13,8 @@ KLBFNucleationMicroForce::validParams()
   InputParameters params = Material::validParams();
   params += BaseNameInterface::validParams();
 
-  params.addClassDescription(
-      "This class computes the external driving force for nucleation given "
-      "a Drucker-Prager strength envelope developed by Kumar et al. (2020)");
+  params.addClassDescription("This class computes the external driving force for nucleation given "
+                             "a Drucker-Prager strength envelope developed by Kumar et al. (2020)");
 
   params.addParam<MaterialPropertyName>(
       "fracture_toughness", "Gc", "energy release rate or fracture toughness");
@@ -103,5 +102,6 @@ KLBFNucleationMicroForce::computeQpProperties()
   // Compute the external driving force required to recover the desired strength envelope.
   _ex_driving[_qp] = (beta_2 * std::sqrt(J2) + beta_1 * I1 + beta_0) / (1 + beta_3 * I1 * I1);
 
+  _stress_balance[_qp] = J2 / _mu[_qp] + std::pow(I1, 2) / 9.0 / K - _ex_driving[_qp] - M;
   _stress_balance[_qp] = J2 / _mu[_qp] + std::pow(I1, 2) / 9.0 / K - _ex_driving[_qp] - M;
 }
