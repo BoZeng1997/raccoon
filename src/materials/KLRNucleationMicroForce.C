@@ -70,7 +70,9 @@ KLRNucleationMicroForce::KLRNucleationMicroForce(const InputParameters & paramet
     _g_name(prependBaseName("degradation_function", true)),
     _g(getADMaterialProperty<Real>(_g_name)),
     _dg_dd(getADMaterialProperty<Real>(derivativePropertyName(_g_name, {_d_name})))
-{
+{  
+  // _fe_problem.getCurrentExecuteOnFlag() == EXEC_TIMESTEP_END; then mooseerr, terminate
+  // or require terminatpostprocesor, cut t half
 }
 
 void

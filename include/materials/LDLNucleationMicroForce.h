@@ -58,6 +58,9 @@ protected:
   /// Whether to use h correction formula for delta
   bool _h_correction;
 
+  // whether to use compressive part correction
+  bool _compressive_correction;
+
   /// The stress tensor
   const ADMaterialProperty<RankTwoTensor> & _stress;
 
@@ -65,4 +68,12 @@ protected:
   const MaterialPropertyName _stress_balance_name;
   /// Quantifying how far is the stress state from stress surface
   ADMaterialProperty<Real> & _stress_balance;
+
+   /// Name of the phase-field variable
+  const VariableName _d_name;
+  // @{ The degradation function and its derivative w/r/t damage
+  const MaterialPropertyName _g_name;
+  const ADMaterialProperty<Real> & _g;
+  const ADMaterialProperty<Real> & _dg_dd;
+  // @}
 };
