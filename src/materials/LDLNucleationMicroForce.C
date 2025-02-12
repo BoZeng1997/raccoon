@@ -30,7 +30,9 @@ LDLNucleationMicroForce::validParams()
 
   params.addRequiredParam<MaterialPropertyName>(
       "tensile_strength", "The tensile strength of the material beyond which the material fails.");
-
+  params.addParam<Real>(
+      "csts_ratio", 0,
+      "The compressive strength over tensile strength.");
   params.addRequiredParam<MaterialPropertyName>(
       "hydrostatic_strength",
       "The hydrostatic strength of the material beyond which the material fails.");
@@ -50,6 +52,12 @@ LDLNucleationMicroForce::validParams()
       "-\\dfrac{3\\Gc}{8\\delta}=0 $. This value tells how close the material is to strength "
       "envelope.");
   params.addParam<MaterialPropertyName>("stress_name", "stress", "Name of the stress tensor");
+  params.addParam<bool>("compute_drukerprager", false, "Whether to compute_drukerprager");
+  params.addParam<MaterialPropertyName>("dp_balance_name",
+                                        "dpstress_balance",
+                                        "Name of the Druker-Prager stress balance function $F=$. "
+                                        "This value tells how close the material is to strength "
+                                        "envelope.");
   params.addRequiredCoupledVar("phase_field", "Name of the phase-field (damage) variable");
   params.addParam<MaterialPropertyName>("degradation_function", "g", "The degradation function");
   return params;
@@ -65,17 +73,25 @@ LDLNucleationMicroForce::LDLNucleationMicroForce(const InputParameters & paramet
     _lambda(getADMaterialProperty<Real>(prependBaseName("lambda", true))),
     _mu(getADMaterialProperty<Real>(prependBaseName("shear_modulus", true))),
     _sigma_ts(getADMaterialProperty<Real>(prependBaseName("tensile_strength", true))),
+    _csts_ratio(getParam<Real>("csts_ratio")),
     _sigma_hs(getADMaterialProperty<Real>(prependBaseName("hydrostatic_strength", true))),
     _delta(declareADProperty<Real>(prependBaseName("delta", true))),
     _h_correction(getParam<bool>("h_correction")),
     _compressive_correction(getParam<bool>("compressive_correction")),
     _stress(getADMaterialProperty<RankTwoTensor>(prependBaseName("stress_name", true))),
     _stress_balance(declareADProperty<Real>(prependBaseName("stress_balance_name", true))),
+    _compute_drukerprager(getParam<bool>("compute_drukerprager")),
+    _dp_balance(declareADProperty<Real>(prependBaseName("dp_balance_name", true))),
+    _dp_surface_outside(declareADProperty<Real>(prependBaseName("F_dp_quadrant", false))),
     _d_name(getVar("phase_field", 0)->name()),
     _g_name(prependBaseName("degradation_function", true)),
     _g(getADMaterialProperty<Real>(_g_name)),
     _dg_dd(getADMaterialProperty<Real>(derivativePropertyName(_g_name, {_d_name})))
 {
+  if (_compute_drukerprager)
+  {
+    mooseAssert(_csts_ratio > 0, "Please define a valid _csts_ratio > 0");
+  }
 }
 
 void
@@ -106,6 +122,22 @@ LDLNucleationMicroForce::computeQpProperties()
   // Compute critical energy
   ADReal W_ts = _sigma_ts[_qp] * _sigma_ts[_qp] / 2.0 / E;
   ADReal W_hs = _sigma_hs[_qp] * _sigma_hs[_qp] / 2.0 / K;
+
+  // compute Druker-Prager strength balance
+  if (_compute_drukerprager)
+  {
+    ADReal J2_sqrt = std::sqrt(J2);
+    _dp_balance[_qp] =
+        J2_sqrt +
+        (_csts_ratio - 1) / std::sqrt(3.0) / (_csts_ratio + 1) * I1 -
+        2.0 * _csts_ratio * _sigma_ts[_qp] / std::sqrt(3.0) / (_csts_ratio + 1);
+    if(_dp_balance[_qp] >0){
+      _dp_surface_outside[_qp] = (2.0*I1>J2_sqrt) ? 1.0 : 4.0;
+    }
+    else{
+      _dp_surface_outside[_qp]=0.0;
+    }
+  }
 
   // Compute delta
   if (!_compressive_correction)

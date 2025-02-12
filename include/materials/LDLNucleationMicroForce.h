@@ -49,6 +49,9 @@ protected:
   /// The critical tensile strength
   const ADMaterialProperty<Real> & _sigma_ts;
 
+  /// The critical compressive strength / tensile strength
+  const Real & _csts_ratio;
+
   /// The critical hydrostatic strength
   const ADMaterialProperty<Real> & _sigma_hs;
 
@@ -68,6 +71,15 @@ protected:
   const MaterialPropertyName _stress_balance_name;
   /// Quantifying how far is the stress state from stress surface
   ADMaterialProperty<Real> & _stress_balance;
+
+  // whether to compute Druker-Prager strength balance
+  bool _compute_drukerprager;
+  // name for dp balance
+  const MaterialPropertyName _dp_balance_name;
+  // Quantifying how far is the stress state from stress surface
+  ADMaterialProperty<Real> & _dp_balance;
+  ADMaterialProperty<Real> & _dp_surface_outside;
+
 
    /// Name of the phase-field variable
   const VariableName _d_name;
