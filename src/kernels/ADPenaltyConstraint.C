@@ -61,6 +61,7 @@ ADPenaltyConstraint::computeQpResidual()
   }
   if (_smooth)
     function = 0.5 * (std::sqrt(delta_d * delta_d + _epsilon * _epsilon) + delta_d);
+    // function = _epsilon * std::log(1.0+std::exp(delta_d/_epsilon));
     // function = 0.5*std::pow(std::abs(-delta_d)+delta_d,2);
   else
     RaccoonUtils::Macaulay(delta_d);
