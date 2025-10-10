@@ -33,6 +33,12 @@ protected:
   /// The materiel and model dependent parameter
   ADMaterialProperty<Real> & _delta;
 
+  /// delta correction coeff
+  const Real & _delta_A;
+
+  /// delta correction const
+  const Real & _delta_b;
+
   /// Whether to use h correction formula for delta
   bool _h_correction;
 

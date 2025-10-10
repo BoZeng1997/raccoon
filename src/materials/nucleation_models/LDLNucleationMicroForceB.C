@@ -21,6 +21,8 @@ LDLNucleationMicroForceB::validParams()
       "hydrostatic_strength",
       "The hydrostatic strength of the material beyond which the material fails.");
   params.addParam<MaterialPropertyName>("delta", "delta", "Name of the unitless coefficient delta");
+  params.addParam<Real>("delta_A", 1, "delta correction coefficient.");
+  params.addParam<Real>("delta_b", 0, "delta correction constant.");
   params.addParam<bool>("h_correction", false, "Whether to use h correction formula for delta");
   params.addParam<bool>(
       "compressive_correction", false, "Whether to use the compressive correction");
@@ -39,6 +41,8 @@ LDLNucleationMicroForceB::LDLNucleationMicroForceB(const InputParameters & param
     _csts_ratio(getParam<Real>("csts_ratio")),
     _sigma_hs(getADMaterialProperty<Real>(prependBaseName("hydrostatic_strength", true))),
     _delta(declareADProperty<Real>(prependBaseName("delta", true))),
+    _delta_A(getParam<Real>("delta_A")),
+    _delta_b(getParam<Real>("delta_b")),
     _h_correction(getParam<bool>("h_correction")),
     _compressive_correction(getParam<bool>("compressive_correction")),
     _compute_drukerprager(getParam<bool>("compute_drukerprager")),
@@ -129,6 +133,11 @@ LDLNucleationMicroForceB::computeQpProperties()
                         (8 + 3 * std::sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
                         (_Gc[_qp] / W_ts / _L[_qp]) +
                     3.0 / 8.0;
+                    // pokerchip 2024
+      // _delta[_qp] = (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3)) * _sigma_hs[_qp]) /
+      //                   (8 + 3 * std::sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
+      //                   (_Gc[_qp] / W_ts / _L[_qp]) +
+      //               2.0 / 5.0;
     }
     else
     {
@@ -143,6 +152,8 @@ LDLNucleationMicroForceB::computeQpProperties()
                     std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
     }
   }
+
+   _delta[_qp] =  _delta[_qp] * _delta_A + _delta_b;
 
   // Parameters in the strength surface
   ADReal alpha_1 =
