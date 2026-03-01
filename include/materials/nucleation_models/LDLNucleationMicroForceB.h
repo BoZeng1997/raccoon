@@ -39,6 +39,9 @@ protected:
   /// delta correction const
   const Real & _delta_b;
 
+  /// to use quads delta
+  bool _use_quad;
+
   /// Whether to use h correction formula for delta
   bool _h_correction;
 

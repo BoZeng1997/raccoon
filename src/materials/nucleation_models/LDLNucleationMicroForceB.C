@@ -23,6 +23,7 @@ LDLNucleationMicroForceB::validParams()
   params.addParam<MaterialPropertyName>("delta", "delta", "Name of the unitless coefficient delta");
   params.addParam<Real>("delta_A", 1, "delta correction coefficient.");
   params.addParam<Real>("delta_b", 0, "delta correction constant.");
+  params.addParam<bool>("use_quad", true, "Whether to use quad function for delta");
   params.addParam<bool>("h_correction", false, "Whether to use h correction formula for delta");
   params.addParam<bool>(
       "compressive_correction", false, "Whether to use the compressive correction");
@@ -43,6 +44,7 @@ LDLNucleationMicroForceB::LDLNucleationMicroForceB(const InputParameters & param
     _delta(declareADProperty<Real>(prependBaseName("delta", true))),
     _delta_A(getParam<Real>("delta_A")),
     _delta_b(getParam<Real>("delta_b")),
+    _use_quad(getParam<bool>("use_quad")),
     _h_correction(getParam<bool>("h_correction")),
     _compressive_correction(getParam<bool>("compressive_correction")),
     _compute_drukerprager(getParam<bool>("compute_drukerprager")),
@@ -133,7 +135,7 @@ LDLNucleationMicroForceB::computeQpProperties()
                         (8 + 3 * std::sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
                         (_Gc[_qp] / W_ts / _L[_qp]) +
                     3.0 / 8.0;
-                    // pokerchip 2024
+      // pokerchip 2024
       // _delta[_qp] = (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3)) * _sigma_hs[_qp]) /
       //                   (8 + 3 * std::sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
       //                   (_Gc[_qp] / W_ts / _L[_qp]) +
@@ -144,16 +146,28 @@ LDLNucleationMicroForceB::computeQpProperties()
       // Get mesh size of current element
       ADReal h = _current_elem->hmin();
 
-      // Use formula with h correction
-      _delta[_qp] = std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
-                        (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3.0)) * _sigma_hs[_qp]) /
-                        (8 + 3 * std::sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
-                        (_Gc[_qp] / W_ts / _L[_qp]) +
-                    std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
+      if (_use_quad)
+      {
+        _delta[_qp] = std::pow(0.9331 + 0.3371 * h / _L[_qp], -2) *
+                          (0.1900 + 0.1175 * _sigma_ts[_qp] / _sigma_hs[_qp]) * 3 / 16 *
+                          (_Gc[_qp] / W_ts / _L[_qp]) +
+                      std::pow(0.9331 + 0.3371 * h / _L[_qp], -1) * 0.5724;
+      }
+
+      else
+      {
+
+        // Use formula with h correction
+        _delta[_qp] = std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
+                          (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3.0)) * _sigma_hs[_qp]) /
+                          (8 + 3 * std::sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
+                          (_Gc[_qp] / W_ts / _L[_qp]) +
+                      std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
+      }
     }
   }
 
-   _delta[_qp] =  _delta[_qp] * _delta_A + _delta_b;
+  _delta[_qp] = _delta[_qp] * _delta_A + _delta_b;
 
   // Parameters in the strength surface
   ADReal alpha_1 =
