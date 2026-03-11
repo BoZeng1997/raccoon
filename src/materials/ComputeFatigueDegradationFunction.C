@@ -74,6 +74,8 @@ ComputeFatigueDegradationFunction::initQpStatefulProperties()
 void
 ComputeFatigueDegradationFunction::computeQpProperties()
 {
+  using std::pow;
+  using std::log10;
   ADReal sigma_1 = (*_sigma_1)[_qp];
   ADReal sigma_1_old = (*_sigma_1_old)[_qp];
 
@@ -100,7 +102,7 @@ ComputeFatigueDegradationFunction::computeQpProperties()
       _f_alpha[_qp] = 1.0;
     else
       _f_alpha[_qp] =
-          (1 - _k) * std::pow(2 * _alpha_T / ((2 - _p) * _alpha_T + _p * _alpha_bar[_qp]), 2.0) +
+          (1 - _k) * pow(2 * _alpha_T / ((2 - _p) * _alpha_T + _p * _alpha_bar[_qp]), 2.0) +
           _k;
 
     // logarithmic
@@ -111,8 +113,8 @@ ComputeFatigueDegradationFunction::computeQpProperties()
     if (_alpha_bar[_qp] < _alpha_T)
       _f_alpha[_qp] = 1.0;
     else if ((_alpha_bar[_qp] > _alpha_T) &&
-             (_alpha_bar[_qp] < _alpha_T * std::pow(10.0, 1.0 / _kappa)))
-      _f_alpha[_qp] = std::pow(1 - _kappa * std::log10(_alpha_bar[_qp] / _alpha_T), 2.0);
+             (_alpha_bar[_qp] < _alpha_T * pow(10.0, 1.0 / _kappa)))
+      _f_alpha[_qp] = pow(1 - _kappa * log10(_alpha_bar[_qp] / _alpha_T), 2.0);
     else
       _f_alpha[_qp] = 0.0;
   }

@@ -53,7 +53,7 @@
 
 [Bounds]
   [conditional]
-    type = VariableOldValueBounds
+    type = ConditionalBoundsAux
     variable = bounds_dummy
     bounded_variable = d
     fixed_bound_value = 0.0

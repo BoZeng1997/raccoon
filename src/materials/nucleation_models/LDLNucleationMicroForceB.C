@@ -60,6 +60,8 @@ LDLNucleationMicroForceB::LDLNucleationMicroForceB(const InputParameters & param
 void
 LDLNucleationMicroForceB::computeQpProperties()
 {
+  using std::pow;
+  using std::sqrt;
   // The bulk modulus
   ADReal K = _lambda[_qp] + 2.0 * _mu[_qp] / 3.0;
 
@@ -90,9 +92,9 @@ LDLNucleationMicroForceB::computeQpProperties()
   // compute Druker-Prager strength balance
   if (_compute_drukerprager)
   {
-    ADReal J2_sqrt = std::sqrt(J2);
-    _dp_balance[_qp] = J2_sqrt + (_csts_ratio - 1) / std::sqrt(3.0) / (_csts_ratio + 1) * I1 -
-                       2.0 * _csts_ratio * _sigma_ts[_qp] / std::sqrt(3.0) / (_csts_ratio + 1);
+    ADReal J2_sqrt = sqrt(J2);
+    _dp_balance[_qp] = J2_sqrt + (_csts_ratio - 1) / sqrt(3.0) / (_csts_ratio + 1) * I1 -
+                       2.0 * _csts_ratio * _sigma_ts[_qp] / sqrt(3.0) / (_csts_ratio + 1);
     if (_dp_balance[_qp] > 0)
     {
       _dp_surface_outside[_qp] = (2.0 * I1 > J2_sqrt) ? 1.0 : 4.0;
@@ -119,11 +121,11 @@ LDLNucleationMicroForceB::computeQpProperties()
       ADReal h = _current_elem->hmin();
 
       // Use formula with h correction
-      _delta[_qp] = std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
-                        (_sigma_ts[_qp] + 3 * (1 + std::sqrt(3.0)) * _sigma_hs[_qp]) /
-                        (3 + 10 * std::sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
+      _delta[_qp] = pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
+                        (_sigma_ts[_qp] + 3 * (1 + sqrt(3.0)) * _sigma_hs[_qp]) /
+                        (3 + 10 * sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
                         (_Gc[_qp] / W_ts / _L[_qp]) +
-                    std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
+                    pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
     }
   }
   else
@@ -131,8 +133,8 @@ LDLNucleationMicroForceB::computeQpProperties()
     if (!_h_correction)
     {
       // Use formula without h correction
-      _delta[_qp] = (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3)) * _sigma_hs[_qp]) /
-                        (8 + 3 * std::sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
+      _delta[_qp] = (_sigma_ts[_qp] + (1 + 2 * sqrt(3)) * _sigma_hs[_qp]) /
+                        (8 + 3 * sqrt(3)) / _sigma_hs[_qp] * 3.0 / 16.0 *
                         (_Gc[_qp] / W_ts / _L[_qp]) +
                     3.0 / 8.0;
       // pokerchip 2024
@@ -148,21 +150,21 @@ LDLNucleationMicroForceB::computeQpProperties()
 
       if (_use_quad)
       {
-        _delta[_qp] = std::pow(0.9331 + 0.3371 * h / _L[_qp], -2) *
+        _delta[_qp] = pow(0.9331 + 0.3371 * h / _L[_qp], -2) *
                           (0.1900 + 0.1175 * _sigma_ts[_qp] / _sigma_hs[_qp]) * 3 / 16 *
                           (_Gc[_qp] / W_ts / _L[_qp]) +
-                      std::pow(0.9331 + 0.3371 * h / _L[_qp], -1) * 0.5724;
+                      pow(0.9331 + 0.3371 * h / _L[_qp], -1) * 0.5724;
       }
 
       else
       {
 
         // Use formula with h correction
-        _delta[_qp] = std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
-                          (_sigma_ts[_qp] + (1 + 2 * std::sqrt(3.0)) * _sigma_hs[_qp]) /
-                          (8 + 3 * std::sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
+        _delta[_qp] = pow(1 + 3.0 / 8.0 * h / _L[_qp], -2) *
+                          (_sigma_ts[_qp] + (1 + 2 * sqrt(3.0)) * _sigma_hs[_qp]) /
+                          (8 + 3 * sqrt(3.0)) / _sigma_hs[_qp] * 3 / 16 *
                           (_Gc[_qp] / W_ts / _L[_qp]) +
-                      std::pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
+                      pow(1 + 3.0 / 8.0 * h / _L[_qp], -1) * 2 / 5;
       }
     }
   }
@@ -172,23 +174,23 @@ LDLNucleationMicroForceB::computeQpProperties()
   // Parameters in the strength surface
   ADReal alpha_1 =
       -_delta[_qp] * _Gc[_qp] / 8.0 / _sigma_hs[_qp] / _L[_qp] + 2.0 / 3.0 * W_hs / _sigma_hs[_qp];
-  ADReal alpha_2 = -(std::sqrt(3.0) / 8.0 * _delta[_qp] * (3.0 * _sigma_hs[_qp] - _sigma_ts[_qp]) /
+  ADReal alpha_2 = -(sqrt(3.0) / 8.0 * _delta[_qp] * (3.0 * _sigma_hs[_qp] - _sigma_ts[_qp]) /
                          (_sigma_hs[_qp] * _sigma_ts[_qp]) * _Gc[_qp] / _L[_qp] +
-                     2.0 / std::sqrt(3.0) * W_hs / _sigma_hs[_qp] -
-                     2.0 * std::sqrt(3.0) * W_ts / _sigma_ts[_qp]);
+                     2.0 / sqrt(3.0) * W_hs / _sigma_hs[_qp] -
+                     2.0 * sqrt(3.0) * W_ts / _sigma_ts[_qp]);
 
   // Compute the external driving force required to recover the desired strength envelope.
   if (!_compressive_correction)
   {
-    _ex_driving[_qp] = alpha_2 * std::sqrt(J2) + alpha_1 * I1;
+    _ex_driving[_qp] = alpha_2 * sqrt(J2) + alpha_1 * I1;
   }
   else
   {
     _ex_driving[_qp] =
-        alpha_2 * std::sqrt(J2) + alpha_1 * I1 +
-        (I1 > 0 ? 0 : 2) / std::pow(_g[_qp], 1.5) *
+        alpha_2 * sqrt(J2) + alpha_1 * I1 +
+        (I1 > 0 ? 0 : 2) / pow(_g[_qp], 1.5) *
             (J2 / 2.0 / _mu[_qp] + I1 * I1 / 6.0 / (3.0 * _lambda[_qp] + 2.0 * _mu[_qp]));
   }
   _stress_balance[_qp] =
-      J2 / _mu[_qp] + std::pow(I1, 2) / 9.0 / K - _ex_driving[_qp] - M * _delta[_qp];
+      J2 / _mu[_qp] + pow(I1, 2) / 9.0 / K - _ex_driving[_qp] - M * _delta[_qp];
 }
