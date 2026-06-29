@@ -150,10 +150,14 @@ LDLNucleationMicroForceB::computeQpProperties()
 
       if (_use_quad)
       {
-        _delta[_qp] = pow(0.9331 + 0.3371 * h / _L[_qp], -2) *
-                          (0.1900 + 0.1175 * _sigma_ts[_qp] / _sigma_hs[_qp]) * 3 / 16 *
+        // _delta[_qp] = pow(0.9331 + 0.3371 * h / _L[_qp], -2) *
+        //                   (0.1900 + 0.1175 * _sigma_ts[_qp] / _sigma_hs[_qp]) * 3 / 16 *
+        //                   (_Gc[_qp] / W_ts / _L[_qp]) +
+        //               pow(0.9331 + 0.3371 * h / _L[_qp], -1) * 0.5724;
+        _delta[_qp] = pow(1 + 0.375 * h / _L[_qp], -2) *
+                          (0.2304 + 0.1298 * _sigma_ts[_qp] / _sigma_hs[_qp]) * 3 / 16 *
                           (_Gc[_qp] / W_ts / _L[_qp]) +
-                      pow(0.9331 + 0.3371 * h / _L[_qp], -1) * 0.5724;
+                      pow(1 + 0.375 * h / _L[_qp], -1) * 0.6108;
       }
 
       else
